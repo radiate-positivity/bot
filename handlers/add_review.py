@@ -285,21 +285,23 @@ async def process_visa_type(callback: CallbackQuery, state: FSMContext):
     
     data = await state.get_data()
     
-    stars = "⭐" * data["rating"]
+    rating = data.get("rating", 0)
+    stars = "⭐" * rating if rating > 0 else "Не оценено"
     
     confirmation_text = f"""
 ✅ <b>Проверьте ваш отзыв:</b>
 
-<b>Имя:</b> {data['name']}
-<b>Оценка:</b> {stars} ({data['rating']}/5)
+<b>Имя:</b> {data.get('name', 'Не указано')}
+<b>Оценка:</b> {stars} ({rating}/5)
 """
     
-    if data.get("visa_type"):
-        confirmation_text += f"<b>Тип визы:</b> {data['visa_type']}\n"
+    visa_type_data = data.get("visa_type")
+    if visa_type_data:
+        confirmation_text += f"<b>Тип визы:</b> {visa_type_data}\n"
     
     confirmation_text += f"""
 <b>Текст отзыва:</b>
-{data['text']}
+{data.get('text', 'Текст отсутствует')}
 
 <b>Отзыв будет отправлен на модерацию.</b>
 После проверки он появится в общем списке.
@@ -444,51 +446,71 @@ async def back_to_confirmation(callback: CallbackQuery, state: FSMContext):
     
     data = await state.get_data()
     
-    stars = "⭐" * data["rating"]
+    name = data.get("name", "Не указано")
+    rating = data.get("rating", 0)
+    text = data.get("text", "Текст отсутствует")
+    visa_type = data.get("visa_type", "")
+    
+    stars = "⭐" * rating if rating > 0 else "Не оценено"
     
     confirmation_text = f"""
 ✅ <b>Проверьте ваш отзыв:</b>
 
-<b>Имя:</b> {data['name']}
-<b>Оценка:</b> {stars} ({data['rating']}/5)
+<b>Имя:</b> {name}
+<b>Оценка:</b> {stars} ({rating}/5)
 """
     
-    if data.get("visa_type"):
-        confirmation_text += f"<b>Тип визы:</b> {data['visa_type']}\n"
+    if visa_type:
+        confirmation_text += f"<b>Тип визы:</b> {visa_type}\n"
     
     confirmation_text += f"""
 <b>Текст отзыва:</b>
-{data['text']}
+{text}
 
 <b>Отзыв будет отправлен на модерацию.</b>
 После проверки он появится в общем списке.
 """
     
-    await callback.message.edit_text(
-        text=confirmation_text,
-        reply_markup=get_confirmation_keyboard().as_markup(),
-        parse_mode="HTML"
-    )
+    if not name or name == "Не указано" or not text or text == "Текст отсутствует" or rating == 0:
+        await callback.message.edit_text(
+            text="❌ <b>Недостаточно данных для отзыва.</b>\n\nНачните процесс добавления отзыва заново.",
+            reply_markup=InlineKeyboardBuilder().add(
+                InlineKeyboardButton(text="📝 Начать заново", callback_data="reviews_add"),
+                InlineKeyboardButton(text="🏠 В главное меню", callback_data="reviews_back_to_menu")
+            ).adjust(2).as_markup(),
+            parse_mode="HTML"
+        )
+    else:
+        await callback.message.edit_text(
+            text=confirmation_text,
+            reply_markup=get_confirmation_keyboard().as_markup(),
+            parse_mode="HTML"
+        )
     await callback.answer()
 
 async def show_confirmation_message(message: Message, state: FSMContext):
     data = await state.get_data()
     
-    stars = "⭐" * data["rating"]
+    name = data.get("name", "Не указано")
+    rating = data.get("rating", 0)
+    text = data.get("text", "Текст отсутствует")
+    visa_type = data.get("visa_type", "")
+    
+    stars = "⭐" * rating if rating > 0 else "Не оценено"
     
     confirmation_text = f"""
 ✅ <b>Проверьте ваш отзыв:</b>
 
-<b>Имя:</b> {data['name']}
-<b>Оценка:</b> {stars} ({data['rating']}/5)
+<b>Имя:</b> {name}
+<b>Оценка:</b> {stars} ({rating}/5)
 """
     
-    if data.get("visa_type"):
-        confirmation_text += f"<b>Тип визы:</b> {data['visa_type']}\n"
+    if visa_type:
+        confirmation_text += f"<b>Тип визы:</b> {visa_type}\n"
     
     confirmation_text += f"""
 <b>Текст отзыва:</b>
-{data['text']}
+{text}
 
 <b>Отзыв будет отправлен на модерацию.</b>
 После проверки он появится в общем списке.
@@ -504,11 +526,24 @@ async def show_confirmation_message(message: Message, state: FSMContext):
 async def confirm_review(callback: CallbackQuery, state: FSMContext, bot: Bot):
     data = await state.get_data()
     
+    name = data.get("name", "")
+    text = data.get("text", "")
+    rating = data.get("rating", 0)
+    visa_type = data.get("visa_type", "")
+    
+    if not name or not text or rating == 0:
+        await callback.message.edit_text(
+            text="❌ <b>Ошибка:</b> Не все обязательные поля заполнены.\n\nПожалуйста, начните процесс заново.",
+            parse_mode="HTML"
+        )
+        await state.clear()
+        return
+    
     review_id = reviews_db.add_review(
-        name=data["name"],
-        text=data["text"],
-        rating=data["rating"],
-        visa_type=data.get("visa_type", ""),
+        name=name,
+        text=text,
+        rating=rating,
+        visa_type=visa_type,
         status="pending",
         user_id=callback.from_user.id,
         username=callback.from_user.username
@@ -521,21 +556,21 @@ async def confirm_review(callback: CallbackQuery, state: FSMContext, bot: Bot):
         if ADMIN_ID and ADMIN_ID != 0:
             print(f"🔔 Отправка уведомления админу на ID: {ADMIN_ID}")
             
-            stars = "⭐" * data["rating"]
+            stars = "⭐" * rating
             admin_text = f"""
 🔔 <b>НОВЫЙ ОТЗЫВ НА МОДЕРАЦИЮ</b>
 
 <b>ID:</b> #{review_id}
-<b>От:</b> {data['name']}
+<b>От:</b> {name}
 <b>Username:</b> @{callback.from_user.username if callback.from_user.username else 'нет'}
 <b>User ID:</b> {callback.from_user.id}
-<b>Оценка:</b> {stars} ({data['rating']}/5)
+<b>Оценка:</b> {stars} ({rating}/5)
 """
             
-            if data.get("visa_type"):
-                admin_text += f"<b>Тип визы:</b> {data['visa_type']}\n"
+            if visa_type:
+                admin_text += f"<b>Тип визы:</b> {visa_type}\n"
             
-            preview_text = data['text'][:200] + "..." if len(data['text']) > 200 else data['text']
+            preview_text = text[:200] + "..." if len(text) > 200 else text
             admin_text += f"\n<b>Текст:</b>\n{preview_text}"
             
             admin_builder = InlineKeyboardBuilder()
@@ -630,8 +665,7 @@ async def cancel_review(callback: CallbackQuery, state: FSMContext):
     
     await callback.message.edit_text(
         text=text,
-        reply_markup=keyboard,
+        reply_markup=builder.as_markup(),
         parse_mode="HTML"
     )
-
     await callback.answer()
