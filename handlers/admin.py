@@ -9,7 +9,7 @@ from config import ADMIN_ID
 router = Router()
 
 async def check_admin(user_id: int) -> bool:
-    print(f"ADMIN_ID: {ADMIN_ID}, User ID: {callback.from_user.id}")
+    print(f"ADMIN_ID: {ADMIN_ID}, User ID: {CallbackQuery.from_user.id}")
     print(f"Action: {action}")
     print(f"Review ID: {review_id}")
     return user_id == ADMIN_ID
@@ -151,4 +151,5 @@ async def admin_actions(callback: CallbackQuery, bot: Bot):
         )
 
         await callback.answer()
+
 
