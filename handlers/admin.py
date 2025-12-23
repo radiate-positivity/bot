@@ -26,7 +26,6 @@ async def moderation_list(message: Message):
         return
     
     text = f"📋 <b>Отзывы на модерации:</b> {len(pending_reviews)} шт.\n\n"
-    
     builder = InlineKeyboardBuilder()
     
     for review in pending_reviews[:10]:
@@ -56,7 +55,6 @@ async def moderation_list(message: Message):
 
 @router.callback_query(F.data.startswith("admin_"))
 async def admin_actions(callback: CallbackQuery, bot: Bot):
-    # Добавляем отладку
     logger.info(f"ADMIN_ID: {ADMIN_ID}, User ID: {callback.from_user.id}")
     logger.info(f"Action: {callback.data}")
     
@@ -71,30 +69,41 @@ async def admin_actions(callback: CallbackQuery, bot: Bot):
             review_id = int(action.split(":")[1])
             logger.info(f"Попытка одобрить отзыв #{review_id}")
             
-            if reviews_db.update_review_status(review_id, "approved"):
-                review = reviews_db.get_review(review_id)
-                logger.info(f"Отзыв #{review_id} найден в БД")
+            review = reviews_db.get_review(review_id)
+            if review:
+                logger.info(f"Отзыв #{review_id} найден, текущий статус: {review.get('status')}")
                 
-                if review and review.get("user_id"):
-                    try:
-                        await bot.send_message(
-                            chat_id=review["user_id"],
-                            text=f"✅ Ваш отзыв #{review_id} был одобрен и опубликован!\n\nСпасибо за обратную связь!"
-                        )
-                        logger.info(f"Уведомление отправлено пользователю {review['user_id']}")
-                    except Exception as e:
-                        logger.error(f"Не удалось отправить уведомление пользователю: {e}")
+                success = reviews_db.update_review_status(review_id, "approved")
+                logger.info(f"update_review_status вернул: {success}")
                 
-                await callback.answer("✅ Отзыв одобрен", show_alert=False)
-                await callback.message.edit_text(
-                    text=f"✅ Отзыв #{review_id} одобрен и опубликован.",
-                    reply_markup=None
-                )
+                if success:
+                    updated_review = reviews_db.get_review(review_id)
+                    logger.info(f"Обновленный статус: {updated_review.get('status')}")
+                    
+                    if updated_review and updated_review.get("user_id"):
+                        try:
+                            await bot.send_message(
+                                chat_id=updated_review["user_id"],
+                                text=f"✅ Ваш отзыв #{review_id} был одобрен и опубликован!\n\nСпасибо за обратную связь!"
+                            )
+                            logger.info(f"Уведомление отправлено пользователю {updated_review['user_id']}")
+                        except Exception as e:
+                            logger.error(f"Не удалось отправить уведомление пользователю: {e}")
+                    
+                    await callback.answer("✅ Отзыв одобрен", show_alert=False)
+                    await callback.message.edit_text(
+                        text=f"✅ Отзыв #{review_id} одобрен и опубликован.",
+                        reply_markup=None
+                    )
+                else:
+                    logger.error(f"update_review_status вернул False для отзыва #{review_id}")
+                    await callback.answer("❌ Не удалось обновить статус", show_alert=True)
             else:
+                logger.error(f"Отзыв #{review_id} не найден в БД")
                 await callback.answer("❌ Отзыв не найден", show_alert=True)
                 
         except Exception as e:
-            logger.error(f"Ошибка при одобрении отзыва: {e}")
+            logger.error(f"Ошибка при одобрении отзыва: {e}", exc_info=True)
             await callback.answer("❌ Произошла ошибка", show_alert=True)
     
     elif action.startswith("admin_reject:"):
@@ -102,20 +111,24 @@ async def admin_actions(callback: CallbackQuery, bot: Bot):
             review_id = int(action.split(":")[1])
             logger.info(f"Попытка отклонить отзыв #{review_id}")
             
-            if reviews_db.update_review_status(review_id, "rejected"):
-                review = reviews_db.get_review(review_id)
+            review = reviews_db.get_review(review_id)
+            if review:
+                success = reviews_db.update_review_status(review_id, "rejected")
                 
-                if review and review.get("user_id"):
-                    try:
-                        await bot.send_message(
-                            chat_id=review["user_id"],
-                            text=f"❌ Ваш отзыв #{review_id} был отклонен модератором.\n\nПричина: не соответствует правилам публикации."
-                        )
-                    except Exception as e:
-                        logger.error(f"Не удалось отправить уведомление пользователю: {e}")
-                
-                await callback.answer("❌ Отзыв отклонен", show_alert=False)
-                await callback.message.delete()
+                if success:
+                    if review and review.get("user_id"):
+                        try:
+                            await bot.send_message(
+                                chat_id=review["user_id"],
+                                text=f"❌ Ваш отзыв #{review_id} был отклонен модератором.\n\nПричина: не соответствует правилам публикации."
+                            )
+                        except Exception as e:
+                            logger.error(f"Не удалось отправить уведомление пользователю: {e}")
+                    
+                    await callback.answer("❌ Отзыв отклонен", show_alert=False)
+                    await callback.message.delete()
+                else:
+                    await callback.answer("❌ Не удалось обновить статус", show_alert=True)
             else:
                 await callback.answer("❌ Отзыв не найден", show_alert=True)
                 
@@ -224,21 +237,23 @@ async def admin_actions(callback: CallbackQuery, bot: Bot):
     
     elif action == "admin_stats":
         try:
-            total = reviews_db.get_reviews_count()
-            approved = reviews_db.get_reviews_count(status="approved")
-            pending = reviews_db.get_reviews_count(status="pending")
-            rejected = reviews_db.get_reviews_count(status="rejected")
-            
+            stats = reviews_db.get_statistics()
             text = f"""
 📊 <b>Статистика отзывов</b>
 
-Всего отзывов: {total}
-✅ Одобрено: {approved}
-⏳ На модерации: {pending}
-❌ Отклонено: {rejected}
+Всего отзывов: {stats['total']}
+✅ Одобрено: {stats['approved']}
+⏳ На модерации: {stats['pending']}
+❌ Отклонено: {stats['rejected']}
+⭐ Средний рейтинг: {stats['average_rating']}/5
 
-Процент одобрения: {(approved/total*100 if total > 0 else 0):.1f}%
+Процент одобрения: {(stats['approved']/stats['total']*100 if stats['total'] > 0 else 0):.1f}%
 """
+            
+            if stats['visa_types']:
+                text += "\n<b>Распределение по типам виз:</b>\n"
+                for visa_type, count in stats['visa_types'].items():
+                    text += f"• {visa_type}: {count}\n"
             
             builder = InlineKeyboardBuilder()
             builder.row(
