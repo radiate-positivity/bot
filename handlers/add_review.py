@@ -6,7 +6,6 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from utils.database import reviews_db
-from utils.text_data import DEFAULT_REVIEWS
 
 router = Router()
 
@@ -16,19 +15,6 @@ class ReviewStates(StatesGroup):
     waiting_for_rating = State()
     waiting_for_visa_type = State()
     waiting_for_confirmation = State()
-
-def init_default_reviews():
-    existing_reviews = reviews_db.get_reviews()
-    if not existing_reviews:
-        for review in DEFAULT_REVIEWS:
-            reviews_db.add_review(
-                name=review["name"],
-                text=review["text"],
-                rating=review["rating"],
-                visa_type=review["visa_type"],
-                status=review["status"]
-            )
-        print("✅ База отзывов инициализирована с примерами")
 
 def get_rating_keyboard() -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
@@ -638,4 +624,5 @@ async def cancel_review(callback: CallbackQuery, state: FSMContext):
         reply_markup=get_main_keyboard(),
         parse_mode="HTML"
     )
+
     await callback.answer()
