@@ -1,0 +1,14 @@
+2025-12-22 16:36:01,935 - __main__ - INFO - Запуск бота...
+2025-12-22 16:36:01,945 - __main__ - INFO - Регистрация обработчиков...
+2025-12-22 16:36:01,991 - __main__ - INFO - Роутеры зарегистрированы: start, faq, quiz, contact, services, reviews, add_review
+2025-12-22 16:36:01,994 - __main__ - INFO - Роутер admin зарегистрирован
+2025-12-22 16:36:02,417 - __main__ - INFO - Бот запущен и готов к работе!
+2025-12-22 16:36:02,417 - __main__ - INFO - Бот: @olga_visa_bot (ID: 8220783782)
+2025-12-22 16:36:02,418 - aiogram.dispatcher - INFO - Start polling
+2025-12-22 16:36:02,501 - aiogram.dispatcher - INFO - Run polling for bot @olga_visa_bot id=8220783782 - 'EB1A Visa Assistant'
+2025-12-22 16:36:12,251 - aiogram.event - INFO - Update id=899914981 is handled. Duration 312 ms by bot id=8220783782
+2025-12-22 16:36:14,075 - aiogram.event - INFO - Update id=899914982 is handled. Duration 280 ms by bot id=8220783782
+2025-12-22 16:36:17,582 - aiogram.event - INFO - Update id=899914983 is handled. Duration 155 ms by bot id=8220783782
+2025-12-22 16:36:21,905 - aiogram.event - INFO - Update id=899914984 is handled. Duration 217 ms by bot id=8220783782
+2025-12-22 16:36:26,326 - aiogram.event - INFO - Update id=899914985 is handled. Duration 234 ms by bot id=8220783782
+2025-12-22 16:36:29,575 - aiogram.event - INFO - Update id=899914986 is handled. Duration 234 ms by bot id=8220783782
