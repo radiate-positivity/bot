@@ -180,27 +180,6 @@ def export_reviews():
     print(f"✅ Отзывы экспортированы в файл: {filename}")
     print(f"📁 Путь: {os.path.abspath(filename)}")
 
-def init_default_reviews():
-    from utils.text_data import DEFAULT_REVIEWS
-    
-    existing = reviews_db.get_reviews(limit=1)
-    
-    if existing:
-        confirm = input("В базе уже есть отзывы. Добавить примеры? (да/нет): ").lower()
-        if confirm not in ['да', 'д', 'y', 'yes']:
-            print("❌ Отменено.")
-            return
-    
-    for review in DEFAULT_REVIEWS:
-        reviews_db.add_review(
-            name=review["name"],
-            text=review["text"],
-            rating=review["rating"],
-            visa_type=review["visa_type"],
-            status=review["status"]
-        )
-    
-    print(f"✅ Добавлено {len(DEFAULT_REVIEWS)} примеров отзывов.")
-
 if __name__ == "__main__":
+
     admin_menu()
