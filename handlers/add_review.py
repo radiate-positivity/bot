@@ -112,8 +112,8 @@ def get_confirmation_keyboard() -> InlineKeyboardBuilder:
 
 @router.message(Command("addreview"))
 @router.callback_query(F.data == "reviews_add")
-async def start_review_process(event: Message | CallbackQuery, state: FSMContext):
-    await state.clear()
+async def start_review_process(callback: CallbackQuery, state: FSMContext):
+
     await state.set_state(ReviewStates.waiting_for_name)
     
     text = """
@@ -133,15 +133,15 @@ async def start_review_process(event: Message | CallbackQuery, state: FSMContext
         )
     )
     
-    if isinstance(event, CallbackQuery):
-        await event.message.edit_text(
+    if isinstance(callback, CallbackQuery):
+        await callback.message.edit_text(
             text=text,
             reply_markup=builder.as_markup(),
             parse_mode="HTML"
         )
-        await event.answer()
+        await callback.answer()
     else:
-        await event.answer(
+        await callback.answer(
             text=text,
             reply_markup=builder.as_markup(),
             parse_mode="HTML"
@@ -519,6 +519,8 @@ async def confirm_review(callback: CallbackQuery, state: FSMContext, bot: Bot):
     try:
         from config import ADMIN_ID
         if ADMIN_ID and ADMIN_ID != 0:
+            print(f"🔔 Отправка уведомления админу на ID: {ADMIN_ID}")
+            
             stars = "⭐" * data["rating"]
             admin_text = f"""
 🔔 <b>НОВЫЙ ОТЗЫВ НА МОДЕРАЦИЮ</b>
@@ -554,14 +556,22 @@ async def confirm_review(callback: CallbackQuery, state: FSMContext, bot: Bot):
                 )
             )
             
-            await bot.send_message(
-                chat_id=ADMIN_ID,
-                text=admin_text,
-                reply_markup=admin_builder.as_markup(),
-                parse_mode="HTML"
-            )
-    except:
-        pass
+            try:
+                await bot.send_message(
+                    chat_id=ADMIN_ID,
+                    text=admin_text,
+                    reply_markup=admin_builder.as_markup(),
+                    parse_mode="HTML"
+                )
+                print(f"✅ Уведомление отправлено админу {ADMIN_ID}")
+            except Exception as e:
+                print(f"❌ Ошибка отправки сообщения админу: {e}")
+        else:
+            print("⚠️ ADMIN_ID не настроен в config.py")
+    except ImportError:
+        print("⚠️ ADMIN_ID не найден в config.py")
+    except Exception as e:
+        print(f"❌ Ошибка при отправке уведомления админу: {e}")
     
     success_text = f"""
 ✅ <b>Отзыв успешно отправлен!</b>
@@ -613,4 +623,5 @@ async def cancel_review(callback: CallbackQuery, state: FSMContext):
         reply_markup=get_main_keyboard(),
         parse_mode="HTML"
     )
+
     await callback.answer()
