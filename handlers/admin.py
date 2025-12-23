@@ -1,41 +1,19 @@
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, Message, InlineKeyboardButton
+from aiogram.types import CallbackQuery, Message
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from utils.database import reviews_db
 from config import ADMIN_ID
 
-router = Router(name="admin")  # Добавляем имя для роутера
+router = Router()
 
-# Тестовый обработчик для проверки
-@router.message(Command("ping"))
-async def ping_handler(message: Message):
-    """Простая команда для проверки работы роутера"""
-    await message.answer(f"🏓 Pong! Admin роутер работает. Ваш ID: {message.from_user.id}")
-
-@router.message(Command("testadmin"))
-async def test_admin(message: Message):
-    """Тестовая команда для проверки прав администратора"""
-    user_id = message.from_user.id
-    is_admin = user_id == ADMIN_ID
-    
-    response = f"""
-📊 <b>Проверка прав администратора</b>
-
-Ваш ID: <code>{user_id}</code>
-ADMIN_ID: <code>{ADMIN_ID}</code>
-Статус: {'✅ АДМИНИСТРАТОР' if is_admin else '❌ НЕ АДМИНИСТРАТОР'}
-"""
-    
-    await message.answer(response, parse_mode="HTML")
+async def check_admin(user_id: int) -> bool:
+    return user_id == ADMIN_ID
 
 @router.message(Command("moderation"))
 async def moderation_list(message: Message):
-    """Показывает отзывы на модерации"""
-    user_id = message.from_user.id
-    
-    if user_id != ADMIN_ID:
+    if not await check_admin(message.from_user.id):
         await message.answer("⛔ У вас нет доступа к этой команде.")
         return
     
@@ -46,6 +24,7 @@ async def moderation_list(message: Message):
         return
     
     text = f"📋 <b>Отзывы на модерации:</b> {len(pending_reviews)} шт.\n\n"
+    
     builder = InlineKeyboardBuilder()
     
     for review in pending_reviews[:10]:
@@ -75,125 +54,61 @@ async def moderation_list(message: Message):
 
 @router.callback_query(F.data.startswith("admin_"))
 async def admin_actions(callback: CallbackQuery, bot: Bot):
-    if callback.from_user.id != ADMIN_ID:
+    if not await check_admin(callback.from_user.id):
         await callback.answer("⛔ Нет доступа", show_alert=True)
         return
     
     action = callback.data
     
     if action.startswith("admin_approve:"):
-        try:
-            review_id = int(action.split(":")[1])
+        review_id = int(action.split(":")[1])
+        if reviews_db.update_review_status(review_id, "approved"):
+            review = reviews_db.get_review(review_id)
+            if review and review.get("user_id"):
+                try:
+                    await bot.send_message(
+                        chat_id=review["user_id"],
+                        text=f"✅ Ваш отзыв #{review_id} был одобрен и опубликован!\n\nСпасибо за обратную связь!"
+                    )
+                except:
+                    pass
             
-            if reviews_db.update_review_status(review_id, "approved"):
-                review = reviews_db.get_review(review_id)
-                
-                if review and review.get("user_id"):
-                    try:
-                        await bot.send_message(
-                            chat_id=review["user_id"],
-                            text=f"✅ Ваш отзыв #{review_id} был одобрен и опубликован!\n\nСпасибо за обратную связь!"
-                        )
-                    except:
-                        pass
-                
-                await callback.answer("✅ Отзыв одобрен", show_alert=False)
-                await callback.message.edit_text(
-                    text=f"✅ Отзыв #{review_id} одобрен и опубликован.",
-                    reply_markup=None
-                )
-            else:
-                await callback.answer("❌ Отзыв не найден", show_alert=True)
-                
-        except Exception:
-            await callback.answer("❌ Произошла ошибка", show_alert=True)
+            await callback.answer("✅ Отзыв одобрен")
+            await callback.message.edit_text(
+                text=f"✅ Отзыв #{review_id} одобрен и опубликован.",
+                reply_markup=None
+            )
+        else:
+            await callback.answer("❌ Отзыв не найден", show_alert=True)
     
     elif action.startswith("admin_reject:"):
-        try:
-            review_id = int(action.split(":")[1])
-            
-            if reviews_db.update_review_status(review_id, "rejected"):
-                review = reviews_db.get_review(review_id)
-                
-                if review and review.get("user_id"):
-                    try:
-                        await bot.send_message(
-                            chat_id=review["user_id"],
-                            text=f"❌ Ваш отзыв #{review_id} был отклонен модератором.\n\nПричина: не соответствует правилам публикации."
-                        )
-                    except:
-                        pass
-                
-                await callback.answer("❌ Отзыв отклонен", show_alert=False)
-                await callback.message.delete()
-            else:
-                await callback.answer("❌ Отзыв не найден", show_alert=True)
-                
-        except Exception:
-            await callback.answer("❌ Произошла ошибка", show_alert=True)
-    
-    elif action.startswith("admin_show_full:"):
-        try:
-            review_id = int(action.split(":")[1])
+        review_id = int(action.split(":")[1])
+        if reviews_db.update_review_status(review_id, "rejected"):
             review = reviews_db.get_review(review_id)
+            if review and review.get("user_id"):
+                try:
+                    await bot.send_message(
+                        chat_id=review["user_id"],
+                        text=f"❌ Ваш отзыв #{review_id} был отклонен модератором.\n\nПричина: не соответствует правилам публикации."
+                    )
+                except:
+                    pass
             
-            if not review:
-                await callback.answer("❌ Отзыв не найден", show_alert=True)
-                return
-            
-            stars = "⭐" * review["rating"]
-            text = f"""
-📋 <b>Полный текст отзыва #{review_id}</b>
-
-<b>Имя:</b> {review['name']}
-<b>Оценка:</b> {stars} ({review['rating']}/5)
-<b>Тип визы:</b> {review.get('visa_type', 'Не указан')}
-<b>Статус:</b> {review['status']}
-<b>Дата:</b> {review['created_at'][:10]}
-
-<b>Текст отзыва:</b>
-{review['text']}
-"""
-            
-            builder = InlineKeyboardBuilder()
-            builder.row(
-                InlineKeyboardButton(
-                    text="✅ Одобрить",
-                    callback_data=f"admin_approve:{review_id}"
-                ),
-                InlineKeyboardButton(
-                    text="❌ Отклонить",
-                    callback_data=f"admin_reject:{review_id}"
-                )
-            )
-            builder.row(
-                InlineKeyboardButton(
-                    text="⬅️ Назад",
-                    callback_data="admin_back"
-                )
-            )
-            
-            await callback.message.edit_text(
-                text=text,
-                reply_markup=builder.as_markup(),
-                parse_mode="HTML"
-            )
-            await callback.answer()
-            
-        except Exception:
-            await callback.answer("❌ Произошла ошибка", show_alert=True)
+            await callback.answer("❌ Отзыв отклонен")
+            await callback.message.delete()
+        else:
+            await callback.answer("❌ Отзыв не найден", show_alert=True)
     
     elif action.startswith("admin_view:"):
-        try:
-            review_id = int(action.split(":")[1])
-            review = reviews_db.get_review(review_id)
-            
-            if not review:
-                await callback.answer("❌ Отзыв не найден", show_alert=True)
-                return
-            
-            stars = "⭐" * review["rating"]
-            text = f"""
+        review_id = int(action.split(":")[1])
+        review = reviews_db.get_review(review_id)
+        
+        if not review:
+            await callback.answer("❌ Отзыв не найден", show_alert=True)
+            return
+        
+        stars = "⭐" * review["rating"]
+        text = f"""
 📋 <b>Отзыв #{review_id}</b>
 
 <b>Имя:</b> {review['name']}
@@ -207,113 +122,28 @@ async def admin_actions(callback: CallbackQuery, bot: Bot):
 <b>Текст отзыва:</b>
 {review['text']}
 """
-            
-            builder = InlineKeyboardBuilder()
-            builder.row(
-                InlineKeyboardButton(
-                    text="✅ Одобрить",
-                    callback_data=f"admin_approve:{review_id}"
-                ),
-                InlineKeyboardButton(
-                    text="❌ Отклонить",
-                    callback_data=f"admin_reject:{review_id}"
-                )
+        
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(
+                text="✅ Одобрить",
+                callback_data=f"admin_approve:{review_id}"
+            ),
+            InlineKeyboardButton(
+                text="❌ Отклонить",
+                callback_data=f"admin_reject:{review_id}"
             )
-            builder.row(
-                InlineKeyboardButton(
-                    text="⬅️ Назад к списку",
-                    callback_data="admin_back"
-                )
+        )
+        builder.row(
+            InlineKeyboardButton(
+                text="⬅️ Назад",
+                callback_data="admin_back"
             )
-            
-            await callback.message.edit_text(
-                text=text,
-                reply_markup=builder.as_markup(),
-                parse_mode="HTML"
-            )
-            await callback.answer()
-            
-        except Exception:
-            await callback.answer("❌ Произошла ошибка", show_alert=True)
-    
-    elif action == "admin_back":
-        try:
-            pending_reviews = reviews_db.get_reviews(status="pending")
-            
-            if not pending_reviews:
-                await callback.message.edit_text("✅ Нет отзывов на модерации.")
-                return
-            
-            text = f"📋 <b>Отзывы на модерации:</b> {len(pending_reviews)} шт.\n\n"
-            builder = InlineKeyboardBuilder()
-            
-            for review in pending_reviews[:10]:
-                stars = "⭐" * review["rating"]
-                text += f"<b>#{review['id']}</b> - {review['name']} {stars}\n"
-                text += f"<i>{review['text'][:50]}...</i>\n"
-                text += "─" * 30 + "\n"
-                
-                builder.row(
-                    InlineKeyboardButton(
-                        text=f"👁️ #{review['id']}",
-                        callback_data=f"admin_view:{review['id']}"
-                    )
-                )
-            
-            if len(pending_reviews) > 10:
-                text += f"\n<i>И еще {len(pending_reviews) - 10} отзывов...</i>"
-            
-            builder.row(
-                InlineKeyboardButton(
-                    text="📊 Статистика",
-                    callback_data="admin_stats"
-                )
-            )
-            
-            await callback.message.edit_text(
-                text=text,
-                reply_markup=builder.as_markup(),
-                parse_mode="HTML"
-            )
-            await callback.answer()
-            
-        except Exception:
-            await callback.answer("❌ Произошла ошибка", show_alert=True)
-    
-    elif action == "admin_stats":
-        try:
-            stats = reviews_db.get_statistics()
-            text = f"""
-📊 <b>Статистика отзывов</b>
-
-Всего отзывов: {stats['total']}
-✅ Одобрено: {stats['approved']}
-⏳ На модерации: {stats['pending']}
-❌ Отклонено: {stats['rejected']}
-⭐ Средний рейтинг: {stats['average_rating']}/5
-
-Процент одобрения: {(stats['approved']/stats['total']*100 if stats['total'] > 0 else 0):.1f}%
-"""
-            
-            if stats['visa_types']:
-                text += "\n<b>Распределение по типам виз:</b>\n"
-                for visa_type, count in stats['visa_types'].items():
-                    text += f"• {visa_type}: {count}\n"
-            
-            builder = InlineKeyboardBuilder()
-            builder.row(
-                InlineKeyboardButton(
-                    text="⬅️ Назад",
-                    callback_data="admin_back"
-                )
-            )
-            
-            await callback.message.edit_text(
-                text=text,
-                reply_markup=builder.as_markup(),
-                parse_mode="HTML"
-            )
-            await callback.answer()
-            
-        except Exception:
-            await callback.answer("❌ Произошла ошибка", show_alert=True)
+        )
+        
+        await callback.message.edit_text(
+            text=text,
+            reply_markup=builder.as_markup(),
+            parse_mode="HTML"
+        )
+        await callback.answer()
