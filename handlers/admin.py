@@ -6,14 +6,36 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from utils.database import reviews_db
 from config import ADMIN_ID
 
-router = Router()
+router = Router(name="admin")  # Добавляем имя для роутера
 
-async def check_admin(user_id: int) -> bool:
-    return user_id == ADMIN_ID
+# Тестовый обработчик для проверки
+@router.message(Command("ping"))
+async def ping_handler(message: Message):
+    """Простая команда для проверки работы роутера"""
+    await message.answer(f"🏓 Pong! Admin роутер работает. Ваш ID: {message.from_user.id}")
+
+@router.message(Command("testadmin"))
+async def test_admin(message: Message):
+    """Тестовая команда для проверки прав администратора"""
+    user_id = message.from_user.id
+    is_admin = user_id == ADMIN_ID
+    
+    response = f"""
+📊 <b>Проверка прав администратора</b>
+
+Ваш ID: <code>{user_id}</code>
+ADMIN_ID: <code>{ADMIN_ID}</code>
+Статус: {'✅ АДМИНИСТРАТОР' if is_admin else '❌ НЕ АДМИНИСТРАТОР'}
+"""
+    
+    await message.answer(response, parse_mode="HTML")
 
 @router.message(Command("moderation"))
 async def moderation_list(message: Message):
-    if not await check_admin(message.from_user.id):
+    """Показывает отзывы на модерации"""
+    user_id = message.from_user.id
+    
+    if user_id != ADMIN_ID:
         await message.answer("⛔ У вас нет доступа к этой команде.")
         return
     
@@ -53,7 +75,7 @@ async def moderation_list(message: Message):
 
 @router.callback_query(F.data.startswith("admin_"))
 async def admin_actions(callback: CallbackQuery, bot: Bot):
-    if not await check_admin(callback.from_user.id):
+    if callback.from_user.id != ADMIN_ID:
         await callback.answer("⛔ Нет доступа", show_alert=True)
         return
     
@@ -295,5 +317,3 @@ async def admin_actions(callback: CallbackQuery, bot: Bot):
             
         except Exception:
             await callback.answer("❌ Произошла ошибка", show_alert=True)
-
-
