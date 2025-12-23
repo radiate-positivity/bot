@@ -7,24 +7,6 @@ from config import REVIEWS_CHANNEL_ID, REVIEWS_CHANNEL_LINK
 
 router = Router()
 
-def init_default_reviews():
-    try:
-        from utils.text_data import DEFAULT_REVIEWS
-        existing_reviews = reviews_db.get_reviews(status="approved", limit=1)
-        if not existing_reviews:
-            print("🔧 Инициализация базы отзывов...")
-            for review in DEFAULT_REVIEWS:
-                reviews_db.add_review(
-                    name=review["name"],
-                    text=review["text"],
-                    rating=review["rating"],
-                    visa_type=review["visa_type"],
-                    status=review["status"]
-                )
-            print("✅ База отзывов инициализирована с примерами")
-    except Exception as e:
-        print(f"⚠️ Ошибка при инициализации отзывов: {e}")
-
 def get_reviews_keyboard() -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
     
@@ -504,4 +486,5 @@ async def reviews_back_to_menu(callback: CallbackQuery):
     except:
         pass
     
+
     await callback.answer()
