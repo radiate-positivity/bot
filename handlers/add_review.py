@@ -113,8 +113,7 @@ def get_confirmation_keyboard() -> InlineKeyboardBuilder:
 @router.message(Command("addreview"))
 @router.callback_query(F.data == "reviews_add")
 async def start_review_process(callback: CallbackQuery, state: FSMContext):
-    init_default_reviews()
-    
+
     await state.set_state(ReviewStates.waiting_for_name)
     
     text = """
@@ -626,4 +625,5 @@ async def cancel_review(callback: CallbackQuery, state: FSMContext):
     )
 
     await callback.answer()
+
 
