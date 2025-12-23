@@ -1,7 +1,7 @@
 import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = os.environ.get("ADMIN_ID")
+ADMIN_ID = int(os.getenv('ADMIN_ID'))
 
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не найден в переменных окружения.")
@@ -15,3 +15,4 @@ PR_SPECIALIST_USERNAME = "@username_specialist"
 PR_SPECIALIST_EMAIL = "partner@firma.com"
 
 PR_SPECIALIST_PHONE = "+1234567890"
+
