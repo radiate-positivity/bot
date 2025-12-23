@@ -610,7 +610,17 @@ ID отзыва: #{review_id}
 async def cancel_review(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     
-    from handlers.start import get_main_keyboard
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(
+            text="📊 Посмотреть другие отзывы",
+            callback_data="reviews_examples"
+        ),
+        InlineKeyboardButton(
+            text="🏠 В главное меню",
+            callback_data="reviews_back_to_menu"
+        )
+    )
     
     text = """
 ❌ <b>Добавление отзыва отменено</b>
@@ -620,7 +630,7 @@ async def cancel_review(callback: CallbackQuery, state: FSMContext):
     
     await callback.message.edit_text(
         text=text,
-        reply_markup=get_main_keyboard(),
+        reply_markup=keyboard,
         parse_mode="HTML"
     )
 
