@@ -254,15 +254,12 @@ async def request_consultation(callback: CallbackQuery, state: FSMContext):
 Ваш результат квиза: <b>{quiz_score}/40</b>
 
 <b>Контакты для связи:</b>
-• Телеграм: @visa_specialist
-• Email: consult@visasuccess.com
-• Телефон: +1 (123) 456-7890
+• Телеграм: @OlgaMar_pr
+• Email: tvolga074@gmail.com
 
 <b>Что подготовить к консультации:</b>
 1. Резюме/CV
-2. Список публикаций
-3. Информацию о наградах
-4. Рекомендательные письма (если есть)
+2. Список публикаций (если есть)
 
 Мы свяжемся с вами в течение 24 часов.
     """
@@ -282,4 +279,5 @@ async def request_consultation(callback: CallbackQuery, state: FSMContext):
     )
     
     await state.clear()
+
     await callback.answer()
