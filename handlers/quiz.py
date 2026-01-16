@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from utils.quiz_texts import QUIZ_TEXTS
+from utils.text_data import START_TEXTS
 
 router = Router()
 
@@ -260,3 +261,4 @@ async def request_consultation(callback: CallbackQuery, state: FSMContext):
     
     await state.clear()
     await callback.answer()
+
