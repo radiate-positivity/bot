@@ -8,11 +8,10 @@ if not BOT_TOKEN:
 if not ADMIN_ID:
     raise ValueError("ADMIN_ID не найден в переменных окружения.")
 
-REVIEWS_CHANNEL_ID = "@your_reviews_channel"
-REVIEWS_CHANNEL_LINK = "https://t.me/your_reviews_channel"
+REVIEWS_CHANNEL_ID = "@visausa_eb1"
+REVIEWS_CHANNEL_LINK = "https://t.me/visausa_eb1"
 
-PR_SPECIALIST_USERNAME = "@username_specialist"
-PR_SPECIALIST_EMAIL = "partner@firma.com"
+PR_SPECIALIST_USERNAME = "@OlgaMar_pr"
+PR_SPECIALIST_EMAIL = "tvolga074@gmail.com"
 
-PR_SPECIALIST_PHONE = "+1234567890"
 
