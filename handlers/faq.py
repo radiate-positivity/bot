@@ -3,6 +3,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from utils.faq_texts import FAQ_TEXTS
+from utils.text_data import START_TEXTS
 
 router = Router()
 
