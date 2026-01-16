@@ -9,7 +9,6 @@ router = Router()
 def get_services_keyboard() -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
     
-    # Оставляем только кнопку связи и возврата
     builder.row(
         InlineKeyboardButton(
             text="📞 Связаться для заказа",
@@ -29,8 +28,6 @@ def get_services_keyboard() -> InlineKeyboardBuilder:
 @router.message(F.text == "💼 Услуги и стоимость")
 async def services_handler(message: Message):
     services_text = f"{SERVICES_TEXTS['main_title']}\n\n{SERVICES_TEXTS['main_text']}"
-    
-    services_text += f"\n\n{CONTACT_TEXTS['contact_order']}"
     
     keyboard_builder = get_services_keyboard()
     
@@ -79,3 +76,4 @@ async def service_back_to_menu(callback: CallbackQuery):
         pass
     
     await callback.answer()
+
