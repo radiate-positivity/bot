@@ -2,8 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-from utils.text_data import FAQ_DATA
+from utils.faq_texts import FAQ_TEXTS
 
 router = Router()
 
@@ -26,6 +25,9 @@ def get_faq_main_keyboard() -> InlineKeyboardMarkup:
             text="🔬 EB-2 NIW", 
             callback_data="faq_category:niw"
         )
+    )
+    
+    builder.row(
         InlineKeyboardButton(
             text="🔙 Главное меню", 
             callback_data="faq_back_to_menu"
@@ -36,7 +38,7 @@ def get_faq_main_keyboard() -> InlineKeyboardMarkup:
 
 def get_faq_category_keyboard(category: str) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    category_data = FAQ_DATA.get(category, {})
+    category_data = FAQ_TEXTS["data"].get(category, {})
     
     if "questions" in category_data:
         for q_key, q_data in category_data["questions"].items():
@@ -66,14 +68,8 @@ def get_faq_category_keyboard(category: str) -> InlineKeyboardMarkup:
 
 @router.message(F.text == "❓ Частые вопросы (FAQ)")
 async def show_faq_menu(message: Message):
-    menu_text = """
-📚 <b>Частые вопросы (FAQ)</b>
-
-Выберите категорию вопросов:
-"""
-    
     await message.answer(
-        text=menu_text,
+        text=FAQ_TEXTS["menu_title"],
         reply_markup=get_faq_main_keyboard(),
         parse_mode="HTML"
     )
@@ -81,7 +77,7 @@ async def show_faq_menu(message: Message):
 @router.callback_query(F.data.startswith("faq_category:"))
 async def process_faq_category(callback: CallbackQuery):
     category = callback.data.split(":")[1]
-    category_data = FAQ_DATA.get(category, {})
+    category_data = FAQ_TEXTS["data"].get(category, {})
     
     if not category_data:
         await callback.answer("Категория не найдена")
@@ -90,12 +86,7 @@ async def process_faq_category(callback: CallbackQuery):
     title = category_data.get("title", "Категория")
     questions_count = len(category_data.get("questions", {}))
     
-    text = f"""
-{title}
-
-В этой категории {questions_count} вопросов.
-Выберите интересующий вопрос:
-    """
+    text = f"{title}\n\nВ этой категории {questions_count} вопросов.\nВыберите интересующий вопрос:"
     
     await callback.message.edit_text(
         text=text,
@@ -108,7 +99,7 @@ async def process_faq_category(callback: CallbackQuery):
 async def process_faq_question(callback: CallbackQuery):
     _, category, question_key = callback.data.split(":")
     
-    category_data = FAQ_DATA.get(category, {})
+    category_data = FAQ_TEXTS["data"].get(category, {})
     question_data = category_data.get("questions", {}).get(question_key, {})
     
     if not question_data:
@@ -130,13 +121,7 @@ async def process_faq_question(callback: CallbackQuery):
         )
     )
     
-    text = f"""
-<b>❔ Вопрос:</b> {question_text}
-
-{answer_text}
-
-<i>Эта информация носит ознакомительный характер.</i>
-    """
+    text = f"<b>❔ Вопрос:</b> {question_text}\n\n{answer_text}\n\n<i>Эта информация носит ознакомительный характер.</i>"
     
     await callback.message.edit_text(
         text=text,
@@ -147,14 +132,8 @@ async def process_faq_question(callback: CallbackQuery):
 
 @router.callback_query(F.data == "faq_back_to_categories")
 async def back_to_faq_categories(callback: CallbackQuery):
-    menu_text = """
-📚 <b>Частые вопросы (FAQ)</b>
-
-Выберите категорию вопросов:
-"""
-    
     await callback.message.edit_text(
-        text=menu_text,
+        text=FAQ_TEXTS["menu_title"],
         reply_markup=get_faq_main_keyboard(),
         parse_mode="HTML"
     )
@@ -164,20 +143,8 @@ async def back_to_faq_categories(callback: CallbackQuery):
 async def back_to_main_menu(callback: CallbackQuery):
     from handlers.start import get_main_keyboard
     
-    welcome_text = """
-🤖 <b>Добро пожаловать!</b>
-
-Я — бот-ассистент компании <b>Clever Solutions</b>. 
-Помогу вам с PR активностями и предварительной оценкой шансов на получение виз.
-• EB-1A — для лиц с исключительными способностями (иммиграционная)
-• O-1 — для лиц с исключительными способностями (неиммиграционная)
-• EB-2 NIW — национальный интерес 
-
-Выберите интересующий вас раздел👇
-    """
-    
     await callback.message.answer(
-        text=welcome_text,
+        text=START_TEXTS["welcome"],
         reply_markup=get_main_keyboard(),
         parse_mode="HTML"
     )
@@ -191,15 +158,8 @@ async def back_to_main_menu(callback: CallbackQuery):
 
 @router.message(Command("faq"))
 async def cmd_faq(message: Message):
-    menu_text = """
-📚 <b>Частые вопросы (FAQ)</b>
-
-Выберите категорию вопросов:
-"""
-    
     await message.answer(
-        text=menu_text,
+        text=FAQ_TEXTS["menu_title"],
         reply_markup=get_faq_main_keyboard(),
         parse_mode="HTML"
-
     )
