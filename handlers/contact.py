@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from config import PR_SPECIALIST_USERNAME, PR_SPECIALIST_EMAIL
-from utils.text_data import CONTACT_TEXTS
+from utils.text_data import CONTACT_TEXTS, START_TEXTS
 
 router = Router()
 
@@ -111,7 +111,6 @@ async def back_to_contacts(callback: CallbackQuery):
 @router.callback_query(F.data == "contact_back_to_menu")
 async def contact_back_to_menu(callback: CallbackQuery):
     from handlers.start import get_main_keyboard
-    from utils.text_data import START_TEXTS
     
     await callback.message.answer(
         text=START_TEXTS["welcome"],
@@ -124,9 +123,5 @@ async def contact_back_to_menu(callback: CallbackQuery):
     except:
         pass
     
-    await callback.answer()
-        pass
-    
-
     await callback.answer()
 
