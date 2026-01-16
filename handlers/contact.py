@@ -9,25 +9,6 @@ router = Router()
 def get_contact_keyboard() -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
     
-    # Исправляем логику проверки username
-    if PR_SPECIALIST_USERNAME and PR_SPECIALIST_USERNAME.strip():
-        username_clean = PR_SPECIALIST_USERNAME.replace('@', '').strip()
-        if username_clean and username_clean != "username_specialist":
-            builder.row(
-                InlineKeyboardButton(
-                    text="💬 Написать в Telegram",
-                    url=f"https://t.me/{username_clean}"
-                )
-            )
-    
-    if PR_SPECIALIST_EMAIL and PR_SPECIALIST_EMAIL.strip() and PR_SPECIALIST_EMAIL != "partner@firma.com":
-        builder.row(
-            InlineKeyboardButton(
-                text="📧 Написать на email",
-                url=f"mailto:{PR_SPECIALIST_EMAIL}"
-            )
-        )
-    
     builder.row(
         InlineKeyboardButton(
             text="📅 Записаться на консультацию",
@@ -76,23 +57,11 @@ async def schedule_consultation(callback: CallbackQuery):
     
     builder = InlineKeyboardBuilder()
     
-    if PR_SPECIALIST_USERNAME and PR_SPECIALIST_USERNAME.strip():
-        username_clean = PR_SPECIALIST_USERNAME.replace('@', '').strip()
-        if username_clean and username_clean != "username_specialist":
-            builder.row(
-                InlineKeyboardButton(
-                    text="💬 Записаться через Telegram",
-                    url=f"https://t.me/{username_clean}?text=Хочу записаться на консультацию"
-                )
-            )
+    if PR_SPECIALIST_USERNAME and PR_SPECIALIST_USERNAME.strip() and PR_SPECIALIST_USERNAME != "@username_specialist":
+        schedule_text += f"\n\n<b>Telegram:</b> {PR_SPECIALIST_USERNAME}"
     
     if PR_SPECIALIST_EMAIL and PR_SPECIALIST_EMAIL.strip() and PR_SPECIALIST_EMAIL != "partner@firma.com":
-        builder.row(
-            InlineKeyboardButton(
-                text="📧 Записаться по email",
-                url=f"mailto:{PR_SPECIALIST_EMAIL}?subject=Запись на консультацию"
-            )
-        )
+        schedule_text += f"\n<b>Email:</b> {PR_SPECIALIST_EMAIL}"
     
     builder.row(
         InlineKeyboardButton(
