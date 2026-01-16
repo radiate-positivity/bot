@@ -9,15 +9,18 @@ router = Router()
 def get_contact_keyboard() -> InlineKeyboardBuilder:
     builder = InlineKeyboardBuilder()
     
-    if PR_SPECIALIST_USERNAME and PR_SPECIALIST_USERNAME != "@username_specialist":
-        builder.row(
-            InlineKeyboardButton(
-                text="💬 Написать в Telegram",
-                url=f"https://t.me/{PR_SPECIALIST_USERNAME.replace('@', '')}"
+    # Исправляем логику проверки username
+    if PR_SPECIALIST_USERNAME and PR_SPECIALIST_USERNAME.strip():
+        username_clean = PR_SPECIALIST_USERNAME.replace('@', '').strip()
+        if username_clean and username_clean != "username_specialist":
+            builder.row(
+                InlineKeyboardButton(
+                    text="💬 Написать в Telegram",
+                    url=f"https://t.me/{username_clean}"
+                )
             )
-        )
     
-    if PR_SPECIALIST_EMAIL and PR_SPECIALIST_EMAIL != "partner@firma.com":
+    if PR_SPECIALIST_EMAIL and PR_SPECIALIST_EMAIL.strip() and PR_SPECIALIST_EMAIL != "partner@firma.com":
         builder.row(
             InlineKeyboardButton(
                 text="📧 Написать на email",
@@ -47,10 +50,10 @@ async def contact_handler(message: Message):
     
     contacts = []
     
-    if PR_SPECIALIST_USERNAME and PR_SPECIALIST_USERNAME != "@username_specialist":
+    if PR_SPECIALIST_USERNAME and PR_SPECIALIST_USERNAME.strip() and PR_SPECIALIST_USERNAME != "@username_specialist":
         contacts.append(f"• <b>Telegram:</b> {PR_SPECIALIST_USERNAME}")
     
-    if PR_SPECIALIST_EMAIL and PR_SPECIALIST_EMAIL != "partner@firma.com":
+    if PR_SPECIALIST_EMAIL and PR_SPECIALIST_EMAIL.strip() and PR_SPECIALIST_EMAIL != "partner@firma.com":
         contacts.append(f"• <b>Email:</b> {PR_SPECIALIST_EMAIL}")
     
     if not contacts:
@@ -73,15 +76,17 @@ async def schedule_consultation(callback: CallbackQuery):
     
     builder = InlineKeyboardBuilder()
     
-    if PR_SPECIALIST_USERNAME and PR_SPECIALIST_USERNAME != "@username_specialist":
-        builder.row(
-            InlineKeyboardButton(
-                text="💬 Записаться через Telegram",
-                url=f"https://t.me/{PR_SPECIALIST_USERNAME.replace('@', '')}?text=Хочу записаться на консультацию"
+    if PR_SPECIALIST_USERNAME and PR_SPECIALIST_USERNAME.strip():
+        username_clean = PR_SPECIALIST_USERNAME.replace('@', '').strip()
+        if username_clean and username_clean != "username_specialist":
+            builder.row(
+                InlineKeyboardButton(
+                    text="💬 Записаться через Telegram",
+                    url=f"https://t.me/{username_clean}?text=Хочу записаться на консультацию"
+                )
             )
-        )
     
-    if PR_SPECIALIST_EMAIL and PR_SPECIALIST_EMAIL != "partner@firma.com":
+    if PR_SPECIALIST_EMAIL and PR_SPECIALIST_EMAIL.strip() and PR_SPECIALIST_EMAIL != "partner@firma.com":
         builder.row(
             InlineKeyboardButton(
                 text="📧 Записаться по email",
@@ -124,4 +129,3 @@ async def contact_back_to_menu(callback: CallbackQuery):
         pass
     
     await callback.answer()
-
