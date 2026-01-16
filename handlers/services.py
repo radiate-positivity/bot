@@ -30,6 +30,8 @@ def get_services_keyboard() -> InlineKeyboardBuilder:
 async def services_handler(message: Message):
     services_text = f"{SERVICES_TEXTS['main_title']}\n\n{SERVICES_TEXTS['main_text']}"
     
+    services_text += f"\n\n{CONTACT_TEXTS['contact_order']}"
+    
     keyboard_builder = get_services_keyboard()
     
     await message.answer(
@@ -40,6 +42,11 @@ async def services_handler(message: Message):
 
 @router.callback_query(F.data == "service_contact")
 async def service_contact(callback: CallbackQuery):
+    await callback.message.edit_text(
+        text=CONTACT_TEXTS["contact_order"],
+        parse_mode="HTML"
+    )
+    
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(
