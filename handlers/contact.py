@@ -1,11 +1,8 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-from config import (
-    PR_SPECIALIST_USERNAME, 
-    PR_SPECIALIST_EMAIL
-)
+from config import PR_SPECIALIST_USERNAME, PR_SPECIALIST_EMAIL
+from utils.text_data import CONTACT_TEXTS
 
 router = Router()
 
@@ -28,7 +25,6 @@ def get_contact_keyboard() -> InlineKeyboardBuilder:
             )
         )
     
-    
     builder.row(
         InlineKeyboardButton(
             text="📅 Записаться на консультацию",
@@ -47,12 +43,7 @@ def get_contact_keyboard() -> InlineKeyboardBuilder:
 
 @router.message(F.text == "👨‍💼 Связаться со специалистом")
 async def contact_handler(message: Message):
-    contact_text = f"""
-📞 <b>Связь со специалистом</b>
-
-Вы можете связаться с нами следующими способами:
-
-"""
+    contact_text = f"{CONTACT_TEXTS['main_title']}\n\n{CONTACT_TEXTS['intro']}"
     
     contacts = []
     
@@ -63,24 +54,10 @@ async def contact_handler(message: Message):
         contacts.append(f"• <b>Email:</b> {PR_SPECIALIST_EMAIL}")
     
     if not contacts:
-        contact_text += """
-⚠️ <b>Контакты не настроены</b>
-
-Для настройки контактов отредактируйте файл <code>config.py</code>:
-1. PR_SPECIALIST_USERNAME - username специалиста в Telegram
-2. PR_SPECIALIST_EMAIL - email специалиста
-3. PR_SPECIALIST_PHONE - телефон специалиста
-"""
+        contact_text += f"\n\n{CONTACT_TEXTS['no_contacts']}"
     else:
-        contact_text += "\n".join(contacts)
-        contact_text += """
-
-<b>Часы работы:</b>
-Пн-Пт: 18:00-22:00 (МСК)
-
-<b>Время ответа:</b>
-• Telegram/Email: в течение 24 часов
-"""
+        contact_text += "\n\n" + "\n".join(contacts)
+        contact_text += f"\n\n{CONTACT_TEXTS['work_hours']}"
     
     keyboard_builder = get_contact_keyboard()
     
@@ -92,25 +69,7 @@ async def contact_handler(message: Message):
 
 @router.callback_query(F.data == "contact_schedule")
 async def schedule_consultation(callback: CallbackQuery):
-    schedule_text = """
-📅 <b>Запись на консультацию</b>
-
-<b>Формат консультаций:</b>
-1. <b>Первичная консультация</b> (15 мин) - бесплатно
-   • Общая оценка ситуации
-   • Рекомендации по стратегии
-   
-2. <b>Детальная консультация</b> (60 мин) - $250
-   • Подробный разбор документов
-   • Стратегия подготовки пакета
-   • Ответы на все вопросы
-
-<b>Для записи:</b>
-1. Выберите удобное время (Пн-Пт: 18:00-22:00 (МСК))
-2. Отправьте запрос через Telegram или email
-3. Укажите удобный формат (видео/аудио звонок)
-4. Приложите краткое описание ситуации
-"""
+    schedule_text = f"{CONTACT_TEXTS['schedule_title']}\n\n{CONTACT_TEXTS['schedule_text']}"
     
     builder = InlineKeyboardBuilder()
     
@@ -152,21 +111,10 @@ async def back_to_contacts(callback: CallbackQuery):
 @router.callback_query(F.data == "contact_back_to_menu")
 async def contact_back_to_menu(callback: CallbackQuery):
     from handlers.start import get_main_keyboard
-    
-    welcome_text = """
-🤖 <b>Добро пожаловать!</b>
-
-Я — бот-ассистент компании <b>Clever Solutions</b>. 
-Помогу вам с PR активностями и предварительной оценкой шансов на получение виз:
-• EB-1A — для лиц с исключительными способностями (иммиграционная)
-• O-1 — для лиц с исключительными способностями (неиммиграционная)
-• EB-2 NIW — национальный интерес 
-
-Выберите интересующий вас раздел👇
-    """
+    from utils.text_data import START_TEXTS
     
     await callback.message.answer(
-        text=welcome_text,
+        text=START_TEXTS["welcome"],
         reply_markup=get_main_keyboard(),
         parse_mode="HTML"
     )
@@ -176,5 +124,9 @@ async def contact_back_to_menu(callback: CallbackQuery):
     except:
         pass
     
+    await callback.answer()
+        pass
+    
 
     await callback.answer()
+
