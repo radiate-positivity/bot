@@ -2,12 +2,21 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-from utils.states import QuizStates
-from utils.text_data import QUIZ_DATA
+from utils.quiz_texts import QUIZ_TEXTS
 
 router = Router()
+
+class QuizStates(StatesGroup):
+    waiting_for_start = State()
+    publications = State()
+    citations = State()
+    reviews = State()
+    membership = State()
+    media = State()
+    awards = State()
+    waiting_for_results = State()
 
 def get_quiz_keyboard(options_list, question_num, total_questions):
     builder = InlineKeyboardBuilder()
@@ -53,7 +62,7 @@ async def start_quiz_command(message: Message, state: FSMContext):
     await state.set_state(QuizStates.waiting_for_start)
     
     await message.answer(
-        text=QUIZ_DATA["start"]["text"],
+        text=QUIZ_TEXTS["start"]["text"],
         reply_markup=get_start_quiz_keyboard(),
         parse_mode="HTML"
     )
@@ -67,13 +76,13 @@ async def start_quiz(callback: CallbackQuery, state: FSMContext):
         message_id=callback.message.message_id
     )
     
-    question_data = QUIZ_DATA["questions"][0]
+    question_data = QUIZ_TEXTS["questions"][0]
     
     await state.set_state(QuizStates.publications)
     
     await callback.message.edit_text(
-        text=f"1/{len(QUIZ_DATA['questions'])}\n\n{question_data['text']}",
-        reply_markup=get_quiz_keyboard(question_data["options"], 1, len(QUIZ_DATA["questions"])),
+        text=f"1/{len(QUIZ_TEXTS['questions'])}\n\n{question_data['text']}",
+        reply_markup=get_quiz_keyboard(question_data["options"], 1, len(QUIZ_TEXTS["questions"])),
         parse_mode="HTML"
     )
     
@@ -105,8 +114,8 @@ async def process_quiz_answer(callback: CallbackQuery, state: FSMContext):
     )
     
     next_q = current_q + 1
-    if next_q < len(QUIZ_DATA["questions"]):
-        question_data = QUIZ_DATA["questions"][next_q]
+    if next_q < len(QUIZ_TEXTS["questions"]):
+        question_data = QUIZ_TEXTS["questions"][next_q]
         
         state_mapping = {
             0: QuizStates.publications,
@@ -121,8 +130,8 @@ async def process_quiz_answer(callback: CallbackQuery, state: FSMContext):
         await state.set_state(next_state)
         
         await callback.message.edit_text(
-            text=f"{next_q + 1}/{len(QUIZ_DATA['questions'])}\n\n{question_data['text']}",
-            reply_markup=get_quiz_keyboard(question_data["options"], next_q + 1, len(QUIZ_DATA["questions"])),
+            text=f"{next_q + 1}/{len(QUIZ_TEXTS['questions'])}\n\n{question_data['text']}",
+            reply_markup=get_quiz_keyboard(question_data["options"], next_q + 1, len(QUIZ_TEXTS["questions"])),
             parse_mode="HTML"
         )
     else:
@@ -139,18 +148,11 @@ async def show_quiz_results_final(callback: CallbackQuery, total_score: int, sta
     elif total_score >= 11:
         result_category = "medium"
     
-    result_data = QUIZ_DATA["results"][result_category]
+    result_data = QUIZ_TEXTS["results"][result_category]
     
     await state.update_data(final_score=total_score)
     
-    result_text = f"""
-{result_data['title']}
-
-{result_data['text']}
-
-<b>Ваш балл: {total_score}/40</b>
-{QUIZ_DATA["disclaimer"]}
-    """
+    result_text = f"{result_data['title']}\n\n{result_data['text']}\n\n<b>Ваш балл: {total_score}/40</b>\n{QUIZ_TEXTS['disclaimer']}"
     
     builder = InlineKeyboardBuilder()
     
@@ -204,18 +206,10 @@ async def back_to_menu_from_quiz(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     
     from handlers.start import get_main_keyboard
-    
-    welcome_text = """
-🤖 <b>Добро пожаловать!</b>
-
-Я — бот-ассистент компании <b>Clever Solutions</b>. 
-Помогу вам с PR активностями и предварительной оценкой шансов на получение виз.
-
-Выберите интересующий вас раздел👇
-    """
+    from utils.text_data import START_TEXTS
     
     await callback.message.answer(
-        text=welcome_text,
+        text=START_TEXTS["welcome"],
         reply_markup=get_main_keyboard(),
         parse_mode="HTML"
     )
@@ -233,7 +227,7 @@ async def restart_quiz(callback: CallbackQuery, state: FSMContext):
     await state.set_state(QuizStates.waiting_for_start)
     
     await callback.message.edit_text(
-        text=QUIZ_DATA["start"]["text"],
+        text=QUIZ_TEXTS["start"]["text"],
         reply_markup=get_start_quiz_keyboard(),
         parse_mode="HTML"
     )
@@ -248,21 +242,7 @@ async def request_consultation(callback: CallbackQuery, state: FSMContext):
     if quiz_score == 0:
         quiz_score = data.get("quiz_score", 0)
     
-    consultation_text = f"""
-📞 <b>Запись на консультацию</b>
-
-Ваш результат квиза: <b>{quiz_score}/40</b>
-
-<b>Контакты для связи:</b>
-• Телеграм: @OlgaMar_pr
-• Email: tvolga074@gmail.com
-
-<b>Что подготовить к консультации:</b>
-1. Резюме/CV
-2. Список публикаций (если есть)
-
-Мы свяжемся с вами в течение 24 часов.
-    """
+    consultation_text = QUIZ_TEXTS["consultation_text"].format(score=quiz_score)
     
     builder = InlineKeyboardBuilder()
     builder.row(
@@ -279,6 +259,4 @@ async def request_consultation(callback: CallbackQuery, state: FSMContext):
     )
     
     await state.clear()
-
     await callback.answer()
-
