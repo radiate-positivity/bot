@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from config import PR_SPECIALIST_USERNAME, PR_SPECIALIST_EMAIL
-from utils.text_data import SERVICES_TEXTS, CONTACT_TEXTS
+from utils.text_data import SERVICES_TEXTS, CONTACT_TEXTS, START_TEXTS
 
 router = Router()
 
@@ -148,3 +148,4 @@ async def service_back_to_menu(callback: CallbackQuery):
         pass
     
     await callback.answer()
+
