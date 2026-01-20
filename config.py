@@ -11,8 +11,9 @@ if not ADMIN_ID:
 REVIEWS_CHANNEL_ID = "@visausa_eb1"
 REVIEWS_CHANNEL_LINK = "https://t.me/visausa_eb1"
 
-PR_SPECIALIST_USERNAME = "OlgaMar_pr"
+PR_SPECIALIST_USERNAME = "@OlgaMar_pr"
 PR_SPECIALIST_EMAIL = "tvolga074@gmail.com"
+
 
 
 
